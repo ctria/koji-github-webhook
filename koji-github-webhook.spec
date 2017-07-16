@@ -1,5 +1,5 @@
 Name: koji-github-webhook
-Version: 0.1 
+Version: 0.2
 Release: 1%{?dist}
 License: LGPLv2
 Summary: A github webhook for koji
@@ -35,5 +35,8 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/httpd/conf.d/koji-github-webhook.conf
 
 %changelog
+* Sun Jul 16 2017 Christos Triantafyllidis <christos.triantafyllidis at gmail.com> - 0.2
+- Added a configuration option for scratch builds
+
 * Wed Aug 12 2015 Christos Triantafyllidis <christos.triantafyllidis at gmail.com> - 0.1
 - Initial release
