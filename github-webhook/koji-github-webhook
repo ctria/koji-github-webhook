@@ -8,43 +8,44 @@ config = ConfigParser()
 config.read('/etc/koji-github-webhook/koji-github-webhook.conf')
 
 session_opts = {}
-session_opts['user'] = config.get('koji','user')
-session_opts['password'] = config.get('koji','password')
+session_opts['user'] = config.get('koji', 'user')
+session_opts['password'] = config.get('koji', 'password')
+
 
 def koji_session(session_opts):
-  session = koji.ClientSession(config.get('koji', 'server'),session_opts)
-  session.login()
-  return session
+    session = koji.ClientSession(config.get('koji', 'server'), session_opts)
+    session.login()
+    return session
+
 
 def application(environ, start_response):
-  try:
-    request_body_size = int(environ.get('CONTENT_LENGTH', 0))
-  except (ValueError):
-    request_body_size = 0
+    try:
+        request_body_size = int(environ.get('CONTENT_LENGTH', 0))
+    except (ValueError):
+        request_body_size = 0
 
-  request_body = environ['wsgi.input'].read(request_body_size)
-  data = json.loads(request_body)
+    request_body = environ['wsgi.input'].read(request_body_size)
+    data = json.loads(request_body)
 
-  repository_full_name = data['repository']['full_name']
-  clone_url = data['repository']['clone_url']
+    repository_full_name = data['repository']['full_name']
+    clone_url = data['repository']['clone_url']
 
-  # head_commit might be null if the push deletes a tag
-  if data['head_commit']:
-    head_commit_id = data['head_commit']['id']
+    # head_commit might be null if the push deletes a tag
+    if data['head_commit']:
+        head_commit_id = data['head_commit']['id']
 
-    if repository_full_name in config.sections():
-      session = koji_session(session_opts)
-      for tag in config.get(repository_full_name,'targets').split():
-        session.build('git+' + clone_url + '#' + head_commit_id, tag)
+        if repository_full_name in config.sections():
+            session = koji_session(session_opts)
+            for tag in config.get(repository_full_name, 'targets').split():
+                session.build('git+' + clone_url + '#' + head_commit_id, tag)
 
-  response_body = "OK\n"
+    response_body = "OK\n"
 
-  status = '200 OK'
-  response_headers = [
-    ('Content-Type', 'text/html'), 
-    ('Content-Length', str(len(response_body)))
-  ]
-  start_response(status, response_headers)
+    status = '200 OK'
+    response_headers = [
+        ('Content-Type', 'text/html'),
+        ('Content-Length', str(len(response_body)))
+    ]
+    start_response(status, response_headers)
 
-  return [response_body]
-
+    return [response_body]
