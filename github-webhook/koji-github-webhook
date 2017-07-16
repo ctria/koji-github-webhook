@@ -36,8 +36,18 @@ def application(environ, start_response):
 
         if repository_full_name in config.sections():
             session = koji_session(session_opts)
-            for tag in config.get(repository_full_name, 'targets').split():
-                session.build('git+' + clone_url + '#' + head_commit_id, tag)
+            try:
+                for tag in config.get(repository_full_name, 'targets').split():
+                    session.build('git+' + clone_url + '#' + head_commit_id, tag)
+            except ConfigParser.NoOptionError:
+                # No 'targets' section for this repository
+                pass
+            try:
+                for tag in config.get(repository_full_name, 'scratch_targets').split():
+                    session.build('git+' + clone_url + '#' + head_commit_id, tag, {'scratch': True})
+            except ConfigParser.NoOptionError:
+                # No 'scratch_targets' section for this repository
+                pass
 
     response_body = "OK\n"
 
