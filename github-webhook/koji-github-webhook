@@ -30,24 +30,28 @@ def application(environ, start_response):
     repository_full_name = data['repository']['full_name']
     clone_url = data['repository']['clone_url']
 
-    # head_commit might be null if the push deletes a tag
-    if data['head_commit']:
-        head_commit_id = data['head_commit']['id']
+    commit_id = None
 
-        if repository_full_name in config.sections():
-            session = koji_session(session_opts)
-            try:
-                for tag in config.get(repository_full_name, 'targets').split():
-                    session.build('git+' + clone_url + '#' + head_commit_id, tag)
-            except ConfigParser.NoOptionError:
-                # No 'targets' section for this repository
-                pass
-            try:
-                for tag in config.get(repository_full_name, 'scratch_targets').split():
-                    session.build('git+' + clone_url + '#' + head_commit_id, tag, {'scratch': True})
-            except ConfigParser.NoOptionError:
-                # No 'scratch_targets' section for this repository
-                pass
+    # head_commit might be null if the push deletes a tag
+    if data['head_commit']: # push event
+        commit_id = data['head_commit']['id']
+    elif data['release']: # release event
+        commit_id = data['release']['tag_name']
+
+    if commit_id and repository_full_name in config.sections():
+        session = koji_session(session_opts)
+        try:
+            for tag in config.get(repository_full_name, 'targets').split():
+                session.build('git+' + clone_url + '#' + head_commit_id, tag)
+        except ConfigParser.NoOptionError:
+            # No 'targets' section for this repository
+            pass
+        try:
+            for tag in config.get(repository_full_name, 'scratch_targets').split():
+                session.build('git+' + clone_url + '#' + head_commit_id, tag, {'scratch': True})
+        except ConfigParser.NoOptionError:
+            # No 'scratch_targets' section for this repository
+            pass
 
     response_body = "OK\n"
 
